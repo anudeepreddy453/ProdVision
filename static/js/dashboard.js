@@ -583,6 +583,11 @@ function toggleColumnsForApplication(application) {
     
     headers.forEach(header => {
         const column = header.getAttribute('data-column');
+        // Don't change visibility of the Actions column here.
+        // Actions visibility is controlled by authentication (body.edit-mode via CSS).
+        if (column === 'actions') {
+            return; // leave display as-is (CSS will handle showing/hiding)
+        }
         
         if (application === 'XVA') {
             // Hide old columns and show XVA-specific columns
@@ -612,7 +617,12 @@ function toggleColumnsForApplication(application) {
             const header = headers[index];
             if (header) {
                 const column = header.getAttribute('data-column');
-                
+
+                // Skip actions column here as well; visibility controlled by CSS/auth
+                if (column === 'actions') {
+                    return;
+                }
+
                 if (application === 'XVA') {
                     if (xvaHiddenColumns.includes(column)) {
                         cell.style.display = 'none';
@@ -637,6 +647,14 @@ function toggleColumnsForApplication(application) {
     
     // Toggle XVA-specific charts and tables visibility
     toggleXVAChartsAndTables(application);
+    
+    // Reinitialize column resizing for newly visible columns
+    // Use a small delay to ensure DOM updates are complete
+    setTimeout(() => {
+        reinitializeColumnResizing();
+        // Also reload column widths to ensure they're applied correctly
+        loadColumnWidths();
+    }, 10);
 }
 
 function toggleFormFieldValidation(application) {
@@ -1073,7 +1091,7 @@ function updateAuthUI() {
     if (isAuthenticated) {
         authBtn.textContent = 'Logout';
         authStatus.textContent = '✓ Authenticated';
-        authStatus.style.color = '#28a745';
+        authStatus.style.color = 'white';
         if (addEntryBtn) {
             addEntryBtn.style.display = 'inline-block';
         }
@@ -1269,7 +1287,56 @@ function calculateHiimCounts(entries) {
     };
 }
 
+// Function to calculate month-end Q and P counts for all applications
+async function calculateMonthEndCounts(month, year) {
+    try {
+        // Build API URL with date range for the entire month
+        const startDate = new Date(year, month, 1);
+        const endDate = new Date(year, month + 1, 0);
+        
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        const params = new URLSearchParams();
+        params.append('start_date', startDateStr);
+        params.append('end_date', endDateStr);
+        
+        const response = await fetch(`/api/entries?${params.toString()}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch month data');
+        }
+        
+        const allMonthEntries = await response.json();
+        
+        let qualityRedCount = 0;
+        let punctualityRedCount = 0;
+        
+        allMonthEntries.forEach(entry => {
+            // Count Quality red
+            if (entry.quality_status === 'Red') {
+                qualityRedCount++;
+            }
+            
+            // Count Punctuality red (if PRC Mail or CP Alerts is Red)
+            if (entry.prc_mail_status === 'Red' || entry.cp_alerts_status === 'Red') {
+                punctualityRedCount++;
+            }
+        });
+        
+        return {
+            quality: qualityRedCount,
+            punctuality: punctualityRedCount
+        };
+    } catch (error) {
+        console.error('Error calculating month-end counts:', error);
+        return { quality: 0, punctuality: 0 };
+    }
+}
+
 function displayEntries(entries) {
+    console.log('🔍 displayEntries called with:', entries.length, 'entries');
+    console.log('🔍 Current application filter:', filters.application);
+    
     entriesTbody.innerHTML = '';
     
     // Show/hide count displays based on filters
@@ -1323,11 +1390,16 @@ function displayEntries(entries) {
         weeklyGroups[weekStart].push(entry);
     });
     
+    console.log('🔍 Weekly groups created:', Object.keys(weeklyGroups).length, 'weeks');
+    console.log('🔍 Weekly groups:', weeklyGroups);
+    
     // Sort weeks by date (newest first)
     const sortedWeeks = Object.keys(weeklyGroups).sort((a, b) => new Date(b) - new Date(a));
+    console.log('🔍 Sorted weeks:', sortedWeeks);
     
     sortedWeeks.forEach(weekStart => {
         const weekEntries = weeklyGroups[weekStart];
+        console.log('🔍 Processing week:', weekStart, 'with', weekEntries.length, 'entries');
         
         // Check if this is the 3rd weekend of the month
         const isInfraWeekend = isThirdWeekendOfMonth(weekStart);
@@ -1335,34 +1407,52 @@ function displayEntries(entries) {
         // Add week header
         const weekHeaderRow = document.createElement('tr');
         weekHeaderRow.className = 'week-header';
+        console.log('🔍 Created week header row with class:', weekHeaderRow.className);
         // Check if this is a month-end week
         const weekStartDate = new Date(weekStart);
         const weekEndDate = new Date(weekStartDate);
         weekEndDate.setDate(weekStartDate.getDate() + 6);
         
-        const isMonthEndWeek = weekStartDate.getMonth() !== weekEndDate.getMonth();
+        // Check if this is the last week of the month
+        const lastDayOfMonth = new Date(weekStartDate.getFullYear(), weekStartDate.getMonth() + 1, 0);
+        const lastDay = lastDayOfMonth.getDate();
+        
+        // Check if this is the last week of the month
+        // Either the week spans across months OR the week contains the last day of the month
+        // But only if this week actually contains entries for the current month
+        const weekContainsCurrentMonthData = weekEntries.some(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate.getMonth() === weekStartDate.getMonth() && 
+                   entryDate.getFullYear() === weekStartDate.getFullYear();
+        });
+        
+        const isMonthEndWeek = weekContainsCurrentMonthData && (
+            weekStartDate.getMonth() !== weekEndDate.getMonth() || 
+            weekEndDate.getDate() >= lastDay
+        );
         
         // Calculate red counts for entire month (only if month-end week)
         let qualityRedCount = 0;
         let punctualityRedCount = 0;
         
         if (isMonthEndWeek) {
-            // Get all entries for the current month
+            // Get all entries for the current month (need to fetch all data, not just filtered)
             const currentMonth = weekStartDate.getMonth();
             const currentYear = weekStartDate.getFullYear();
             
-            entries.forEach(entry => {
-                const entryDate = new Date(entry.date);
-                if (entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear) {
-                    // Count Quality red
-                    if (entry.quality_status === 'Red') {
-                        qualityRedCount++;
-                    }
-                    
-                    // Count Punctuality red (if PRC Mail or CP Alerts is Red)
-                    if (entry.prc_mail_status === 'Red' || entry.cp_alerts_status === 'Red') {
-                        punctualityRedCount++;
-                    }
+            // Calculate Q and P counts for the entire month using all entries
+            // We need to fetch all entries for the month, not just the filtered ones
+            calculateMonthEndCounts(currentMonth, currentYear).then(counts => {
+                qualityRedCount = counts.quality;
+                punctualityRedCount = counts.punctuality;
+                
+                // Update the week header with the correct counts
+                const weekMetricsDiv = weekHeaderRow.querySelector('.week-metrics');
+                if (weekMetricsDiv) {
+                    weekMetricsDiv.innerHTML = `
+                        ${qualityRedCount > 0 ? `<span class="metric-badge quality-red">Q: ${qualityRedCount}</span>` : ''}
+                        ${punctualityRedCount > 0 ? `<span class="metric-badge punctuality-red">P: ${punctualityRedCount}</span>` : ''}
+                    `;
                 }
             });
         }
@@ -1378,19 +1468,38 @@ function displayEntries(entries) {
                     ${isInfraWeekend ? '<span class="infra-weekend-badge">Infra weekend</span>' : ''}
                     ${isMonthEndWeek ? `
                         <div class="week-metrics">
-                            ${qualityRedCount > 0 ? `<span class="metric-badge quality-red">Q: ${qualityRedCount}</span>` : ''}
-                            ${punctualityRedCount > 0 ? `<span class="metric-badge punctuality-red">P: ${punctualityRedCount}</span>` : ''}
+                            <span class="loading">Loading Q & P counts...</span>
                         </div>
                     ` : ''}
                 </div>
             </td>
         `;
         entriesTbody.appendChild(weekHeaderRow);
+        console.log('🔍 Week header appended to DOM. Total rows in tbody:', entriesTbody.children.length);
         
         // Add entries for this week
         weekEntries.forEach(entry => {
             const row = createEntryRow(entry);
             entriesTbody.appendChild(row);
+        });
+    });
+    
+    console.log('🔍 Final tbody children count:', entriesTbody.children.length);
+    console.log('🔍 Week headers in DOM:', document.querySelectorAll('.week-header').length);
+    
+    // Debug week header styling
+    const weekHeaders = document.querySelectorAll('.week-header');
+    weekHeaders.forEach((header, index) => {
+        const computedStyle = window.getComputedStyle(header);
+        console.log(`🔍 Week header ${index}:`, {
+            element: header,
+            className: header.className,
+            background: computedStyle.backgroundColor,
+            color: computedStyle.color,
+            display: computedStyle.display,
+            visibility: computedStyle.visibility,
+            height: computedStyle.height,
+            innerHTML: header.innerHTML.substring(0, 100) + '...'
         });
     });
     
@@ -5528,12 +5637,93 @@ function initializeColumnResizing() {
     console.log('✅ Column resizing initialized');
 }
 
+function reinitializeColumnResizing() {
+    console.log('🔄 Reinitializing column resizing...');
+    
+    // Remove existing event listeners from all resize handles
+    const existingHandles = document.querySelectorAll('.column-resize-handle');
+    console.log('🔍 Found', existingHandles.length, 'existing resize handles');
+    existingHandles.forEach(handle => {
+        handle.removeEventListener('mousedown', startResize);
+        handle.removeEventListener('touchstart', startResize);
+    });
+    
+    // Only add event listeners to visible columns
+    const allHeaders = document.querySelectorAll('#entries-table thead th[data-column]');
+    let visibleHandles = 0;
+    
+    allHeaders.forEach((header, index) => {
+        const columnName = header.getAttribute('data-column');
+        const isVisible = header.style.display !== 'none';
+        
+        if (isVisible) {
+            const resizeHandle = header.querySelector('.column-resize-handle');
+            if (resizeHandle) {
+                console.log(`🔍 Adding listener to visible column: ${columnName}`);
+                
+                // Ensure the resize handle is properly positioned and visible
+                resizeHandle.style.pointerEvents = 'auto';
+                resizeHandle.style.zIndex = '10';
+                
+                resizeHandle.addEventListener('mousedown', startResize);
+                resizeHandle.addEventListener('touchstart', startResize, { passive: false });
+                visibleHandles++;
+            } else {
+                console.log(`❌ No resize handle found for visible column: ${columnName}`);
+            }
+        } else {
+            console.log(`🔍 Skipping hidden column: ${columnName}`);
+        }
+    });
+    
+    console.log('✅ Column resizing reinitialized for', visibleHandles, 'visible handles');
+}
+
+// Debug function to test column resizing - call from browser console
+function testColumnResizing() {
+    console.log('🧪 Testing column resizing...');
+    
+    const visibleHeaders = document.querySelectorAll('#entries-table thead th[data-column]');
+    let visibleCount = 0;
+    let handlesWithListeners = 0;
+    
+    visibleHeaders.forEach(header => {
+        const columnName = header.getAttribute('data-column');
+        const isVisible = header.style.display !== 'none';
+        
+        if (isVisible) {
+            visibleCount++;
+            const resizeHandle = header.querySelector('.column-resize-handle');
+            if (resizeHandle) {
+                // Check if the handle has event listeners
+                const hasListeners = resizeHandle.onmousedown !== null || 
+                                   resizeHandle.addEventListener !== undefined;
+                if (hasListeners) {
+                    handlesWithListeners++;
+                }
+                console.log(`✅ Column "${columnName}": visible, has handle, listeners: ${hasListeners}`);
+            } else {
+                console.log(`❌ Column "${columnName}": visible but no resize handle`);
+            }
+        }
+    });
+    
+    console.log(`📊 Summary: ${visibleCount} visible columns, ${handlesWithListeners} with listeners`);
+    return { visibleCount, handlesWithListeners };
+}
+
 function startResize(e) {
+    console.log('🖱️ startResize called on:', e.target);
     e.preventDefault();
     e.stopPropagation();
     
     isResizing = true;
     currentResizeColumn = e.target.closest('th');
+    
+    if (!currentResizeColumn) {
+        console.error('❌ Could not find column header for resize handle');
+        return;
+    }
     
     // Handle both mouse and touch events
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -5550,7 +5740,7 @@ function startResize(e) {
     document.body.style.userSelect = 'none';
     document.body.style.cursor = 'col-resize';
     
-    console.log('🔄 Started resizing column:', currentResizeColumn.dataset.column);
+    console.log('🔄 Started resizing column:', currentResizeColumn.dataset.column, 'Width:', startWidth);
 }
 
 function handleResize(e) {
@@ -5563,22 +5753,38 @@ function handleResize(e) {
     const deltaX = clientX - startX;
     const newWidth = Math.max(80, Math.min(400, startWidth + deltaX));
     
+    console.log('📏 Resizing to width:', newWidth);
+    
     // Update column width
     currentResizeColumn.style.width = newWidth + 'px';
     
-    // Update all cells in this column
-    const columnIndex = Array.from(currentResizeColumn.parentNode.children).indexOf(currentResizeColumn);
+    // Update all cells in this column using data-column attribute
+    const columnName = currentResizeColumn.getAttribute('data-column');
     const allRows = document.querySelectorAll('#entries-table tr');
     
     allRows.forEach(row => {
-        const cell = row.children[columnIndex];
-        if (cell) {
-            cell.style.width = newWidth + 'px';
+        // Find the cell that corresponds to this column
+        const cells = row.querySelectorAll('td');
+        const headers = document.querySelectorAll('#entries-table thead th[data-column]');
+        
+        // Find the index of our column in the visible headers
+        let columnIndex = -1;
+        headers.forEach((header, index) => {
+            if (header.getAttribute('data-column') === columnName && header.style.display !== 'none') {
+                columnIndex = index;
+            }
+        });
+        
+        if (columnIndex >= 0 && cells[columnIndex]) {
+            cells[columnIndex].style.width = newWidth + 'px';
         }
     });
     
     // Update resize indicator position
     updateResizeIndicator(clientX);
+    
+    // Force a layout refresh to ensure the width changes are visible
+    currentResizeColumn.offsetHeight;
 }
 
 function stopResize(e) {
@@ -5651,19 +5857,29 @@ function loadColumnWidths() {
         
         Object.entries(savedWidths).forEach(([columnName, width]) => {
             const column = document.querySelector(`th[data-column="${columnName}"]`);
-            if (column) {
+            if (column && column.style.display !== 'none') {
                 column.style.width = width + 'px';
                 
-                // Apply width to all cells in this column
-                const columnIndex = Array.from(column.parentNode.children).indexOf(column);
+                // Apply width to all cells in this column using improved logic
                 const allRows = document.querySelectorAll('#entries-table tr');
+                const headers = document.querySelectorAll('#entries-table thead th[data-column]');
                 
-                allRows.forEach(row => {
-                    const cell = row.children[columnIndex];
-                    if (cell) {
-                        cell.style.width = width + 'px';
+                // Find the index of this column in the visible headers
+                let columnIndex = -1;
+                headers.forEach((header, index) => {
+                    if (header.getAttribute('data-column') === columnName && header.style.display !== 'none') {
+                        columnIndex = index;
                     }
                 });
+                
+                if (columnIndex >= 0) {
+                    allRows.forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        if (cells[columnIndex]) {
+                            cells[columnIndex].style.width = width + 'px';
+                        }
+                    });
+                }
                 
                 console.log('✅ Applied width to column', columnName, ':', width);
             }
