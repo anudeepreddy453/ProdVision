@@ -5680,37 +5680,6 @@ function reinitializeColumnResizing() {
 }
 
 // Debug function to test column resizing - call from browser console
-function testColumnResizing() {
-    console.log('🧪 Testing column resizing...');
-    
-    const visibleHeaders = document.querySelectorAll('#entries-table thead th[data-column]');
-    let visibleCount = 0;
-    let handlesWithListeners = 0;
-    
-    visibleHeaders.forEach(header => {
-        const columnName = header.getAttribute('data-column');
-        const isVisible = header.style.display !== 'none';
-        
-        if (isVisible) {
-            visibleCount++;
-            const resizeHandle = header.querySelector('.column-resize-handle');
-            if (resizeHandle) {
-                // Check if the handle has event listeners
-                const hasListeners = resizeHandle.onmousedown !== null || 
-                                   resizeHandle.addEventListener !== undefined;
-                if (hasListeners) {
-                    handlesWithListeners++;
-                }
-                console.log(`✅ Column "${columnName}": visible, has handle, listeners: ${hasListeners}`);
-            } else {
-                console.log(`❌ Column "${columnName}": visible but no resize handle`);
-            }
-        }
-    });
-    
-    console.log(`📊 Summary: ${visibleCount} visible columns, ${handlesWithListeners} with listeners`);
-    return { visibleCount, handlesWithListeners };
-}
 
 function startResize(e) {
     console.log('🖱️ startResize called on:', e.target);
@@ -5889,33 +5858,4 @@ function loadColumnWidths() {
     }
 }
 
-function resetColumnWidths() {
-    try {
-        localStorage.removeItem('columnWidths');
-        console.log('🔄 Reset column widths');
-        
-        // Reset all column widths to default
-        const columns = document.querySelectorAll('th[data-column]');
-        columns.forEach(column => {
-            column.style.width = '';
-            
-            // Reset width for all cells in this column
-            const columnIndex = Array.from(column.parentNode.children).indexOf(column);
-            const allRows = document.querySelectorAll('#entries-table tr');
-            
-            allRows.forEach(row => {
-                const cell = row.children[columnIndex];
-                if (cell) {
-                    cell.style.width = '';
-                }
-            });
-        });
-        
-        // Show success message
-        showMessage('Column widths reset to default', 'success');
-    } catch (error) {
-        console.error('❌ Error resetting column widths:', error);
-        showMessage('Error resetting column widths', 'error');
-    }
-}
 

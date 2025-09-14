@@ -73,12 +73,6 @@ body {
     padding: 10px 0;
 }
 
-.logo-symbol {
-    font-size: 2.5rem;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-    animation: gentle-pulse 3s ease-in-out infinite;
-}
-
 .logo-svg {
     width: 150px;
     height: 150px;
@@ -89,14 +83,6 @@ body {
 @keyframes gentle-pulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.05); }
-}
-
-.company-name {
-    font-size: 0.9rem;
-    font-weight: 500;
-    opacity: 0.9;
-    color: rgba(255, 255, 255, 0.8);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Center Section Styles */
@@ -126,58 +112,6 @@ body {
     gap: 6px;
     align-items: center;
     justify-content: center;
-}
-
-.header-app-btn {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    color: white;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    position: relative;
-    overflow: hidden;
-    min-width: 80px;
-    text-align: center;
-    white-space: nowrap;
-}
-
-.header-app-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s ease;
-}
-
-.header-app-btn:hover::before {
-    left: 100%;
-}
-
-.header-app-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.header-app-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-color: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-    transform: translateY(-2px);
-}
-
-.header-app-btn.active:hover {
-    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-    box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
 }
 
 /* Filter App Buttons - New styles for buttons in filter section */
@@ -2225,12 +2159,6 @@ body {
         width: 100%;
     }
     
-    .header-app-btn {
-        width: 100%;
-        min-width: auto;
-        padding: 8px 12px;
-        font-size: 12px;
-    }
     
     .auth-section {
         flex-direction: column;
@@ -2426,9 +2354,6 @@ body {
         text-align: center;
     }
     
-    .logo-symbol {
-        font-size: 2rem;
-    }
     
     .logo-svg {
         width: 120px;
@@ -2454,12 +2379,6 @@ body {
         width: 100%;
     }
     
-    .header-app-btn {
-        width: 100%;
-        min-width: auto;
-        padding: 8px 12px;
-        font-size: 12px;
-    }
     
     .dashboard-tabs {
         margin-bottom: 16px;
@@ -2775,40 +2694,6 @@ body {
     border: 1px solid #64b5f6 !important;
 }
 
-/* Required field indicator */
-.required-indicator {
-    color: #e53e3e;
-    font-weight: bold;
-    margin-left: 6px;
-    font-size: 16px;
-    position: relative;
-    animation: pulse 2s infinite;
-}
-
-.required-indicator::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 20px;
-    height: 20px;
-    background: rgba(229, 62, 62, 0.1);
-    border-radius: 50%;
-    z-index: -1;
-    animation: pulse-ring 2s infinite;
-}
-
-@keyframes pulse-ring {
-    0% {
-        transform: translate(-50%, -50%) scale(0.8);
-        opacity: 1;
-    }
-    100% {
-        transform: translate(-50%, -50%) scale(1.4);
-        opacity: 0;
-    }
-}
 
 
 /* Status badges */
@@ -3322,27 +3207,7 @@ body.edit-mode .add-entry-btn {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
-/* Loading states */
-.loading-spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(102, 126, 234, 0.2);
-    border-top: 2px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
 
-/* Pulse animation for important elements */
-.pulse {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
 
 
 /* Focus states for accessibility */
@@ -3367,24 +3232,6 @@ body.edit-mode .edit-column {
     flex-direction: row !important;
 }
 
-/* Success/Error states */
-.success-message {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 8px;
-    margin: 10px 0;
-    animation: slideInDown 0.3s ease;
-}
-
-.error-message {
-    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 8px;
-    margin: 10px 0;
-    animation: slideInDown 0.3s ease;
-}
 
 @keyframes slideInDown {
     from {
@@ -3577,10 +3424,6 @@ tr.week-header:nth-child(odd) {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Weekend Warning Styling - Removed background and styling */
-.weekend-warning {
-    display: none;
-}
 
 /* Multi-items styling for Issues, PRBs, and HIIMs */
 .multi-items-group {
