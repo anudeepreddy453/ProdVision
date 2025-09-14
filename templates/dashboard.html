@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProdVision Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="company-logo">
+                    <img src="{{ url_for('static', filename='images/soc103-1.svg') }}" alt="Company Logo" class="logo-svg">
+                </div>
+            </div>
+            <div class="header-center">
+                <h1 class="center-title">ProdVision</h1>
+            </div>
+            <div class="header-right">
+                <div class="auth-section">
+                    <button id="auth-btn" class="btn btn-primary">Enable Edit</button>
+                    <span id="auth-status" class="auth-status"></span>
+                </div>
+            </div>
+        </header>
+
+
+        <!-- Data Table Section -->
+        <section class="data-section">
+            <!-- Filters Section -->
+            <div class="filters">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label for="start-date">Start Date:</label>
+                        <input type="date" id="start-date" class="filter-input" max="">
+                    </div>
+                    <div class="filter-group">
+                        <label for="end-date">End Date:</label>
+                        <input type="date" id="end-date" class="filter-input" max="">
+                    </div>
+                    <div class="filter-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="prb-only"> PRB Only
+                        </label>
+                    </div>
+                    <div class="filter-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="hiim-only"> HIIM Only
+                        </label>
+                    </div>
+                    <div class="filter-actions">
+                        <button id="apply-filters" class="btn btn-secondary">Apply</button>
+                        <button id="clear-filters" class="btn btn-outline">Clear</button>
+                        <div class="application-selector">
+                            <button type="button" class="filter-app-btn active" data-app="CVAR ALL">CVAR ALL</button>
+                            <button type="button" class="filter-app-btn" data-app="CVAR NYQ">CVAR NYQ</button>
+                            <button type="button" class="filter-app-btn" data-app="XVA">XVA</button>
+                        </div>
+                        <button id="view-charts-btn" class="btn btn-info">View Charts</button>
+                        <button id="add-entry-btn" class="btn btn-success" style="display: none;">Add New Entry</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Count Displays Container -->
+            <div id="count-displays-container" class="count-displays-container" style="display: none;">
+                <!-- PRB Count Display -->
+                <div id="prb-count-display" class="count-display">
+                    <div class="count-content">
+                        <span class="count-icon">📊</span>
+                        <div class="count-stats">
+                            <div class="count-item">
+                                <span class="count-label">Total PRBs:</span>
+                                <a href="#" class="count-link" id="prb-total-link" data-type="prb" data-status="total">
+                                    <span class="count-number" id="prb-total-count">0</span>
+                                </a>
+                            </div>
+                            <div class="count-item">
+                                <span class="count-label">Active PRBs:</span>
+                                <a href="#" class="count-link" id="prb-active-link" data-type="prb" data-status="active">
+                                    <span class="count-number active" id="prb-active-count">0</span>
+                                </a>
+                            </div>
+                            <div class="count-item">
+                                <span class="count-label">Closed PRBs:</span>
+                                <a href="#" class="count-link" id="prb-closed-link" data-type="prb" data-status="closed">
+                                    <span class="count-number closed" id="prb-closed-count">0</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- HIIM Count Display -->
+                <div id="hiim-count-display" class="count-display">
+                    <div class="count-content">
+                        <span class="count-icon">🔧</span>
+                        <div class="count-stats">
+                            <div class="count-item">
+                                <span class="count-label">Total HIIM:</span>
+                                <a href="#" class="count-link" id="hiim-total-link" data-type="hiim" data-status="total">
+                                    <span class="count-number" id="hiim-total-count">0</span>
+                                </a>
+                            </div>
+                            <div class="count-item">
+                                <span class="count-label">Active HIIM:</span>
+                                <a href="#" class="count-link" id="hiim-active-link" data-type="hiim" data-status="active">
+                                    <span class="count-number active" id="hiim-active-count">0</span>
+                                </a>
+                            </div>
+                            <div class="count-item">
+                                <span class="count-label">Closed HIIM:</span>
+                                <a href="#" class="count-link" id="hiim-closed-link" data-type="hiim" data-status="closed">
+                                    <span class="count-number closed" id="hiim-closed-count">0</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="entries-table" class="data-table">
+                    <thead>
+                        <tr id="table-header-row">
+                            <th draggable="true" data-column="date" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">Date</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="day" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">Day</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="prc_mail" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">PRC Mail</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="cp_alerts" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">CP Alerts</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="quality" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">Quality</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="issue_description" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">Issue Description</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="prb_id" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">PRB ID</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="hiim_id" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">HIIM ID</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="remarks" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">Remarks</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="acq" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">ACQ</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="valo" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">VALO</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="sensi" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">SENSI</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="cf_ra" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">CF RA</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="quality_legacy" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">Quality Legacy</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="quality_target" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">Quality Target</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="root_cause_application" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">Root Cause Application</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="root_cause_type" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">Root Cause Type</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th draggable="true" data-column="xva_remarks" class="draggable-header">
+                                <span class="column-content">
+                                    <span class="column-title">XVA Remarks</span>
+                                    <span class="drag-handle">⋮⋮</span>
+                                </span>
+                                <div class="column-resize-handle" title="Drag to resize column"></div>
+                            </th>
+                            <th class="edit-column" data-column="actions" style="display: none;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entries-tbody">
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <div class="footer-branding">
+                        <img src="{{ url_for('static', filename='images/logoFooter.svg') }}" alt="Société Générale Logo" class="footer-logo-small">
+                    </div>
+                </div>
+                <div class="footer-center">
+                    <div class="footer-contact">
+                        <span class="contact-label">Developer Contact:</span>
+                        <span class="contact-info">anudeep-kumar.pulikunta@socgen.com</span>
+                    </div>
+                </div>
+                <div class="footer-right">
+                    <div class="footer-copyright">
+                        <span>&copy; 2025 Société Générale. All rights reserved.</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Add/Edit Entry Modal -->
+    <div id="entry-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Add New Entry</h3>
+                <span class="close">&times;</span>
+            </div>
+            
+            <!-- CVAR Form -->
+            <form id="cvar-entry-form" class="entry-form">
+                <div class="form-group">
+                    <label for="entry-date">Date *</label>
+                    <input type="date" id="entry-date" name="date" required max="">
+                </div>
+                
+                <div class="form-group non-xva-field">
+                    <label for="entry-prc-mail">PRC Mail *</label>
+                    <div class="combined-field">
+                        <input type="text" id="entry-prc-mail-text" name="prc_mail_text" placeholder="HH:MM (24h)" required maxlength="5" pattern="[0-9]{1,2}:[0-9]{2}">
+                        <select id="entry-prc-mail-status" name="prc_mail_status" class="status-select" required>
+                            <option value="">Select Status</option>
+                            <option value="Red">Red</option>
+                            <option value="Yellow">Yellow</option>
+                            <option value="Green">Green</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group non-xva-field">
+                    <label for="entry-cp-alerts">CP Alerts</label>
+                    <div class="combined-field">
+                        <input type="text" id="entry-cp-alerts-text" name="cp_alerts_text" placeholder="HH:MM (24h)" maxlength="5">
+                        <select id="entry-cp-alerts-status" name="cp_alerts_status" class="status-select">
+                            <option value="">Select Status</option>
+                            <option value="Red">Red</option>
+                            <option value="Yellow">Yellow</option>
+                            <option value="Green">Green</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group non-xva-field">
+                    <label for="entry-quality">Quality</label>
+                    <select id="entry-quality" name="quality_status" class="status-select">
+                        <option value="">Select Quality</option>
+                        <option value="Red">Red</option>
+                        <option value="Yellow">Yellow</option>
+                        <option value="Green">Green</option>
+                    </select>
+                </div>
+                
+                <!-- New: repeatable Issues list (supports multiple issue descriptions) -->
+                <div class="form-group multi-items-group">
+                    <label>Issues</label>
+                    <div id="issues-container" class="multi-items-container">
+                        <!-- Template item: one issue (can be duplicated by JS) -->
+                        <div class="issue-item item-row">
+                            <textarea class="issue-description" placeholder="Enter issue description" rows="2"></textarea>
+                            <button type="button" class="btn btn-outline remove-item-btn" title="Remove issue" style="display:none;">×</button>
+                        </div>
+                    </div>
+                    <div class="multi-items-actions">
+                        <button type="button" id="add-issue-btn" class="btn btn-sm btn-success">+ Add Issue</button>
+                    </div>
+                    <!-- Legacy single-field kept for backward compatibility (hidden) -->
+                    <textarea id="entry-description" name="issue_description" rows="3" placeholder="Enter issue description" style="display: none;"></textarea>
+                </div>
+
+                <!-- New: repeatable PRB list (supports multiple PRBs) -->
+                <div class="form-group multi-items-group">
+                    <label>PRBs</label>
+                    <div id="prbs-container" class="multi-items-container">
+                        <div class="prb-item item-row">
+                            <input type="number" class="prb-id-number" placeholder="PRB ID" min="1" step="1">
+                            <select class="prb-id-status">
+                                <option value="">Select Status</option>
+                                <option value="active">Active</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                            <input type="url" class="prb-link" placeholder="https://prb.example.com/12345">
+                            <button type="button" class="btn btn-outline remove-item-btn" title="Remove PRB" style="display:none;">Remove</button>
+                        </div>
+                    </div>
+                    <div class="multi-items-actions">
+                        <button type="button" id="add-prb-btn" class="btn btn-sm btn-success">+ Add PRB</button>
+                    </div>
+                    <!-- Legacy single-field inputs (hidden) -->
+                    <div style="display:none;">
+                        <input type="number" id="entry-prb-id-number" name="prb_id_number" placeholder="Enter PRB ID" min="1" step="1">
+                        <select id="entry-prb-id-status" name="prb_id_status">
+                            <option value="">Select Status</option>
+                            <option value="active">Active</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                        <input type="url" id="entry-prb-link" name="prb_link" placeholder="https://prb.example.com/12345">
+                    </div>
+                </div>
+
+                <!-- New: repeatable HIIM list (supports multiple HIIMs) -->
+                <div class="form-group multi-items-group">
+                    <label>HIIMs</label>
+                    <div id="hiims-container" class="multi-items-container">
+                        <div class="hiim-item item-row">
+                            <input type="number" class="hiim-id-number" placeholder="HIIM ID" min="1" step="1">
+                            <select class="hiim-id-status">
+                                <option value="">Select Status</option>
+                                <option value="active">Active</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                            <input type="url" class="hiim-link" placeholder="https://hiim.example.com/12345">
+                            <button type="button" class="btn btn-outline remove-item-btn" title="Remove HIIM" style="display:none;">×</button>
+                        </div>
+                    </div>
+                    <div class="multi-items-actions">
+                        <button type="button" id="add-hiim-btn" class="btn btn-sm btn-success">+ Add HIIM</button>
+                    </div>
+                    <!-- Legacy single-field inputs (hidden) -->
+                    <div style="display:none;">
+                        <input type="number" id="entry-hiim-id-number" name="hiim_id_number" placeholder="Enter HIIM ID" min="1" step="1">
+                        <select id="entry-hiim-id-status" name="hiim_id_status">
+                            <option value="">Select Status</option>
+                            <option value="active">Active</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                        <input type="url" id="entry-hiim-link" name="hiim_link" placeholder="https://hiim.example.com/12345">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="entry-remarks">Remarks</label>
+                    <textarea id="entry-remarks" name="remarks" rows="2" placeholder="Enter additional notes"></textarea>
+                </div>
+                
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Entry</button>
+                    <button type="button" id="cancel-cvar-entry" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+            
+            <!-- XVA Form -->
+            <form id="xva-entry-form" class="entry-form" style="display: none;">
+                <div class="form-group">
+                    <label for="xva-entry-date">Date *</label>
+                    <input type="date" id="xva-entry-date" name="date" required max="">
+                </div>
+                
+                <!-- singular issue_description removed in favor of repeatable Issues -->
+
+                <!-- XVA: repeatable Issues -->
+                <div class="form-group multi-items-group xva-multi-group">
+                    <label>Issues</label>
+                    <div id="xva-issues-container" class="multi-items-container">
+                        <div class="issue-item item-row">
+                            <textarea class="issue-description" rows="2" placeholder="Enter issue description"></textarea>
+                            <button type="button" class="btn btn-outline remove-item-btn" title="Remove Issue" style="display:none;">×</button>
+                        </div>
+                    </div>
+                    <div class="multi-items-actions">
+                        <button type="button" id="xva-add-issue-btn" class="btn btn-sm btn-success">+ Add Issue</button>
+                    </div>
+                    <!-- hidden legacy fields intentionally omitted to avoid duplicate IDs -->
+                </div>
+                
+                <!-- singular PRB/HIIM fields and generic remarks removed in favor of repeatable containers and XVA-specific remarks -->
+                
+                <!-- XVA: repeatable PRBs -->
+                <div class="form-group multi-items-group xva-multi-group">
+                    <label>PRBs</label>
+                    <div id="xva-prbs-container" class="multi-items-container">
+                        <div class="prb-item item-row">
+                            <input type="number" class="prb-id-number" placeholder="PRB ID" min="1" step="1">
+                            <select class="prb-id-status">
+                                <option value="">Select Status</option>
+                                <option value="active">Active</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                            <input type="url" class="prb-link" placeholder="https://prb.example.com/12345">
+                            <button type="button" class="btn btn-outline remove-item-btn" title="Remove PRB" style="display:none;">×</button>
+                        </div>
+                    </div>
+                    <div class="multi-items-actions">
+                        <button type="button" id="xva-add-prb-btn" class="btn btn-sm btn-success">+ Add PRB</button>
+                    </div>
+                </div>
+
+                <!-- XVA: repeatable HIIMs -->
+                <div class="form-group multi-items-group xva-multi-group">
+                    <label>HIIMs</label>
+                    <div id="xva-hiims-container" class="multi-items-container">
+                        <div class="hiim-item item-row">
+                            <input type="number" class="hiim-id-number" placeholder="HIIM ID" min="1" step="1">
+                            <select class="hiim-id-status">
+                                <option value="">Select Status</option>
+                                <option value="active">Active</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                            <input type="url" class="hiim-link" placeholder="https://hiim.example.com/12345">
+                            <button type="button" class="btn btn-outline remove-item-btn" title="Remove HIIM" style="display:none;">×</button>
+                        </div>
+                    </div>
+                    <div class="multi-items-actions">
+                        <button type="button" id="xva-add-hiim-btn" class="btn btn-sm btn-success">+ Add HIIM</button>
+                    </div>
+                </div>
+                
+                <!-- XVA Specific Fields -->
+                <div class="form-group">
+                    <label for="xva-entry-acq">ACQ</label>
+                    <div class="combined-field">
+                        <input type="text" id="xva-entry-acq-text" name="acq_text" placeholder="HH:MM (24h)" maxlength="5" pattern="[0-9]{1,2}:[0-9]{2}">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="xva-entry-valo">VALO</label>
+                    <div class="combined-field">
+                        <input type="text" id="xva-entry-valo-text" name="valo_text" placeholder="HH:MM (24h)" maxlength="5" pattern="[0-9]{1,2}:[0-9]{2}">
+                        <select id="xva-entry-valo-status" name="valo_status" class="status-select">
+                            <option value="">Select Status</option>
+                            <option value="Red">Red</option>
+                            <option value="Yellow">Yellow</option>
+                            <option value="Green">Green</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="xva-entry-sensi">SENSI</label>
+                    <div class="combined-field">
+                        <input type="text" id="xva-entry-sensi-text" name="sensi_text" placeholder="HH:MM (24h)" maxlength="5" pattern="[0-9]{1,2}:[0-9]{2}">
+                        <select id="xva-entry-sensi-status" name="sensi_status" class="status-select">
+                            <option value="">Select Status</option>
+                            <option value="Red">Red</option>
+                            <option value="Yellow">Yellow</option>
+                            <option value="Green">Green</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="xva-entry-cf-ra">CF RA</label>
+                    <div class="combined-field">
+                        <input type="text" id="xva-entry-cf-ra-text" name="cf_ra_text" placeholder="HH:MM (24h)" maxlength="5" pattern="[0-9]{1,2}:[0-9]{2}">
+                        <select id="xva-entry-cf-ra-status" name="cf_ra_status" class="status-select">
+                            <option value="">Select Status</option>
+                            <option value="Red">Red</option>
+                            <option value="Yellow">Yellow</option>
+                            <option value="Green">Green</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="xva-entry-quality-legacy">Quality Legacy</label>
+                    <select id="xva-entry-quality-legacy" name="quality_legacy" class="status-select">
+                        <option value="">Select Quality Legacy</option>
+                        <option value="Red">Red</option>
+                        <option value="Yellow">Yellow</option>
+                        <option value="Green">Green</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="xva-entry-quality-target">Quality Target</label>
+                    <select id="xva-entry-quality-target" name="quality_target" class="status-select">
+                        <option value="">Select Quality Target</option>
+                        <option value="Red">Red</option>
+                        <option value="Yellow">Yellow</option>
+                        <option value="Green">Green</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="xva-entry-root-cause-application">Root Cause Application</label>
+                    <input type="text" id="xva-entry-root-cause-application" name="root_cause_application" placeholder="Enter root cause application">
+                </div>
+                
+                <div class="form-group">
+                    <label for="xva-entry-root-cause-type">Root Cause Type</label>
+                    <input type="text" id="xva-entry-root-cause-type" name="root_cause_type" placeholder="Enter root cause type">
+                </div>
+                
+                <div class="form-group">
+                    <label for="xva-entry-xva-remarks">XVA Remarks</label>
+                    <textarea id="xva-entry-xva-remarks" name="xva_remarks" rows="3" placeholder="Enter XVA specific remarks"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Entry</button>
+                    <button type="button" id="cancel-xva-entry" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Charts Modal -->
+    <div id="charts-modal" class="modal" style="display: none;">
+        <div class="modal-content charts-modal-content">
+            <div class="modal-header">
+                <h3>Graphical View - Data Visualization</h3>
+                <div class="modal-header-actions">
+                    <button id="fullscreen-all-charts" class="btn btn-info btn-sm" title="View All Charts in Fullscreen">
+                        <span class="fullscreen-icon">⛶</span> Fullscreen All
+                    </button>
+                    <span class="close">&times;</span>
+                </div>
+            </div>
+            
+            <!-- Charts Filters -->
+            <div class="charts-filters">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="charts-year-filter">Year:</label>
+                        <div class="custom-multiselect">
+                            <div class="multiselect-trigger" id="year-trigger">
+                                <span class="multiselect-text">Select Year(s)</span>
+                                <span class="multiselect-arrow">▼</span>
+                            </div>
+                            <div class="multiselect-dropdown" id="year-dropdown">
+                                <div class="multiselect-option" data-value="2025">2025</div>
+                                <div class="multiselect-option" data-value="2024">2024</div>
+                                <div class="multiselect-option" data-value="2023">2023</div>
+                                <div class="multiselect-option" data-value="2022">2022</div>
+                            </div>
+                        </div>
+                        <select id="charts-year-filter" class="filter-input hidden" multiple>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="charts-month-filter">Month(s):</label>
+                        <div class="custom-multiselect">
+                            <div class="multiselect-trigger" id="month-trigger">
+                                <span class="multiselect-text">Select Month(s)</span>
+                                <span class="multiselect-arrow">▼</span>
+                            </div>
+                            <div class="multiselect-dropdown" id="month-dropdown">
+                                <div class="multiselect-option" data-value="1">January</div>
+                                <div class="multiselect-option" data-value="2">February</div>
+                                <div class="multiselect-option" data-value="3">March</div>
+                                <div class="multiselect-option" data-value="4">April</div>
+                                <div class="multiselect-option" data-value="5">May</div>
+                                <div class="multiselect-option" data-value="6">June</div>
+                                <div class="multiselect-option" data-value="7">July</div>
+                                <div class="multiselect-option" data-value="8">August</div>
+                                <div class="multiselect-option" data-value="9">September</div>
+                                <div class="multiselect-option" data-value="10">October</div>
+                                <div class="multiselect-option" data-value="11">November</div>
+                                <div class="multiselect-option" data-value="12">December</div>
+                            </div>
+                        </div>
+                        <select id="charts-month-filter" class="filter-input hidden" multiple>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                </div>
+                
+                
+                <!-- Chart Visibility Filters -->
+                <div class="chart-visibility-filters">
+                    <h4>Chart Visibility:</h4>
+                    <div class="visibility-checkboxes">
+                        <label class="visibility-label">
+                            <input type="checkbox" id="show-quality-chart" checked>
+                            <span class="checkmark"></span>
+                            Quality
+                        </label>
+                        <label class="visibility-label">
+                            <input type="checkbox" id="show-punctuality-chart" checked>
+                            <span class="checkmark"></span>
+                            Punctuality
+                        </label>
+                        <label class="visibility-label">
+                            <input type="checkbox" id="show-prb-chart" checked>
+                            <span class="checkmark"></span>
+                            PRB
+                        </label>
+                        <label class="visibility-label">
+                            <input type="checkbox" id="show-hiim-chart" checked>
+                            <span class="checkmark"></span>
+                            HIIM
+                        </label>
+                        <label class="visibility-label xva-only" style="display: none;">
+                            <input type="checkbox" id="show-xva-monthly-red-chart" checked>
+                            <span class="checkmark"></span>
+                            XVA Monthly Red
+                        </label>
+                        <label class="visibility-label xva-only" style="display: none;">
+                            <input type="checkbox" id="show-xva-root-cause-chart" checked>
+                            <span class="checkmark"></span>
+                            XVA Root Cause
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="filter-actions">
+                    <button id="apply-charts-filters" class="btn btn-secondary">Apply Filters</button>
+                    <button id="clear-charts-filters" class="btn btn-outline">Clear</button>
+                </div>
+            </div>
+            
+            <div class="charts-container" id="charts-container">
+                <div class="chart-wrapper" id="quality-chart-wrapper">
+                    <div class="chart-header">
+                        <h3 id="quality-chart-title">Quality Distribution</h3>
+                        <button class="fullscreen-btn" data-chart="quality" title="Toggle Fullscreen">
+                            <span class="fullscreen-icon">⛶</span>
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="quality-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-wrapper" id="punctuality-chart-wrapper">
+                    <div class="chart-header">
+                        <h3 id="punctuality-chart-title">Punctuality Distribution</h3>
+                        <button class="fullscreen-btn" data-chart="punctuality" title="Toggle Fullscreen">
+                            <span class="fullscreen-icon">⛶</span>
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="punctuality-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-wrapper" id="prb-chart-wrapper">
+                    <div class="chart-header">
+                        <h3 id="prb-chart-title">PRB Distribution</h3>
+                        <button class="fullscreen-btn" data-chart="prb" title="Toggle Fullscreen">
+                            <span class="fullscreen-icon">⛶</span>
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="prb-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-wrapper" id="hiim-chart-wrapper">
+                    <div class="chart-header">
+                        <h3 id="hiim-chart-title">HIIM Distribution</h3>
+                        <button class="fullscreen-btn" data-chart="hiim" title="Toggle Fullscreen">
+                            <span class="fullscreen-icon">⛶</span>
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="hiim-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- XVA Specific Charts -->
+                <div class="chart-wrapper xva-only" id="xva-monthly-red-chart-wrapper" style="display: none;">
+                    <div class="chart-header">
+                        <h3 id="xva-monthly-red-chart-title">XVA Monthly Red Count</h3>
+                        <button class="fullscreen-btn" data-chart="xva-monthly-red" title="Toggle Fullscreen">
+                            <span class="fullscreen-icon">⛶</span>
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="xva-monthly-red-chart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-wrapper xva-only" id="xva-root-cause-chart-wrapper" style="display: none;">
+                    <div class="chart-header">
+                        <h3 id="xva-root-cause-chart-title">XVA Root Cause Analysis</h3>
+                        <button class="fullscreen-btn" data-chart="xva-root-cause" title="Toggle Fullscreen">
+                            <span class="fullscreen-icon">⛶</span>
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="xva-root-cause-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- XVA Tables Section -->
+            <div id="xva-tables-section" class="xva-tables-section" style="display: none;">
+                <h3>XVA Analysis Tables</h3>
+                
+                <!-- Monthly Red Count Table -->
+                <div class="table-container">
+                    <h4>Monthly Red Count Analysis</h4>
+                    <table id="xva-monthly-red-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Valo Red</th>
+                                <th>Sensi Red</th>
+                                <th>CF RA Red</th>
+                                <th>Total Red Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="xva-monthly-red-tbody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Root Cause Analysis Table -->
+                <div class="table-container">
+                    <h4>Root Cause Analysis</h4>
+                    <table id="xva-root-cause-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Root Cause Application</th>
+                                <th>Root Cause Type</th>
+                                <th>Total Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="xva-root-cause-tbody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="grand-total-row">
+                                <td colspan="2"><strong>Grand Total</strong></td>
+                                <td id="grand-total-count"><strong>0</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fullscreen Chart Modal -->
+    <div id="fullscreen-chart-modal" class="modal fullscreen-modal" style="display: none;">
+        <div class="fullscreen-content">
+            <div class="fullscreen-header">
+                <h3 id="fullscreen-chart-title"></h3>
+                <button id="exit-fullscreen" class="btn btn-outline">Exit Fullscreen</button>
+            </div>
+            
+            <!-- Fullscreen Filters -->
+            <div class="fullscreen-filters">
+                <div class="filter-group">
+                    <label>Year:</label>
+                    <select id="fullscreen-year-filter" class="filter-select" multiple>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Month:</label>
+                    <select id="fullscreen-month-filter" class="filter-select" multiple>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Application:</label>
+                    <select id="fullscreen-application-filter" class="filter-select">
+                        <option value="CVAR ALL">CVAR ALL</option>
+                        <option value="CVAR NYQ">CVAR NYQ</option>
+                    </select>
+                </div>
+                
+                
+                <button id="fullscreen-apply-filters" class="btn btn-primary">Apply Filters</button>
+            </div>
+            
+            <div class="fullscreen-chart-container">
+                <canvas id="fullscreen-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fullscreen All Charts Modal -->
+    <div id="fullscreen-all-charts-modal" class="modal fullscreen-modal" style="display: none;">
+        <div class="fullscreen-content all-charts-content">
+            <div class="fullscreen-header">
+                <h3>All Charts - Fullscreen View</h3>
+                <button id="exit-fullscreen-all" class="btn btn-outline">Exit Fullscreen</button>
+            </div>
+            
+            <!-- Fullscreen All Charts Filters -->
+            <div class="fullscreen-filters">
+                <div class="filter-group">
+                    <label>Year:</label>
+                    <select id="fullscreen-all-year-filter" class="filter-select" multiple>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Month:</label>
+                    <select id="fullscreen-all-month-filter" class="filter-select" multiple>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Application:</label>
+                    <select id="fullscreen-all-application-filter" class="filter-select">
+                        <option value="CVAR ALL">CVAR ALL</option>
+                        <option value="CVAR NYQ">CVAR NYQ</option>
+                    </select>
+                </div>
+                
+                
+                <button id="fullscreen-all-apply-filters" class="btn btn-primary">Apply Filters</button>
+            </div>
+            
+            <div class="fullscreen-all-charts-container">
+                <div class="fullscreen-chart-grid">
+                    <div class="fullscreen-chart-item" data-chart="quality">
+                        <div class="fullscreen-chart-header">
+                            <h4>Quality Distribution (Bar Chart)</h4>
+                        </div>
+                        <div class="fullscreen-chart-wrapper">
+                            <canvas id="fullscreen-quality-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="fullscreen-chart-item" data-chart="punctuality">
+                        <div class="fullscreen-chart-header">
+                            <h4>PRC Mail Punctuality (Bar Chart)</h4>
+                        </div>
+                        <div class="fullscreen-chart-wrapper">
+                            <canvas id="fullscreen-punctuality-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="fullscreen-chart-item" data-chart="prb">
+                        <div class="fullscreen-chart-header">
+                            <h4>PRB Distribution (Circle Chart)</h4>
+                        </div>
+                        <div class="fullscreen-chart-wrapper">
+                            <canvas id="fullscreen-prb-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="fullscreen-chart-item" data-chart="hiim">
+                        <div class="fullscreen-chart-header">
+                            <h4>HIIM Distribution (Bar Chart)</h4>
+                        </div>
+                        <div class="fullscreen-chart-wrapper">
+                            <canvas id="fullscreen-hiim-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- XVA Charts for Fullscreen -->
+                    <div class="fullscreen-chart-item xva-only" data-chart="xva-monthly-red" style="display: none;">
+                        <div class="fullscreen-chart-header">
+                            <h4>XVA Monthly Red Count (Bar Chart)</h4>
+                        </div>
+                        <div class="fullscreen-chart-wrapper">
+                            <canvas id="fullscreen-xva-monthly-red-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="fullscreen-chart-item xva-only" data-chart="xva-root-cause" style="display: none;">
+                        <div class="fullscreen-chart-header">
+                            <h4>XVA Root Cause Analysis (Pie Chart)</h4>
+                        </div>
+                        <div class="fullscreen-chart-wrapper">
+                            <canvas id="fullscreen-xva-root-cause-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="modal" style="display: none;">
+        <div class="modal-content auth-modal-content">
+            <div class="auth-modal-header">
+                <div class="auth-icon-container">
+                    <div class="auth-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M19 12C19 15.866 15.866 19 12 19C8.13401 19 5 15.866 5 12C5 8.13401 8.13401 5 12 5C15.866 5 19 8.13401 19 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 1V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 21V23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M4.22 4.22L5.64 5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18.36 18.36L19.78 19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M1 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M21 12H23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M4.22 19.78L5.64 18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="auth-title">Authentication Required</h3>
+                <p class="auth-subtitle">Enter your password to enable edit mode</p>
+                <span class="close">&times;</span>
+            </div>
+            <form id="auth-form" class="auth-form">
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-container">
+                        <input type="password" id="password" class="form-input" required placeholder="Enter your password">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary auth-submit-btn">
+                        <span class="btn-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span class="btn-text">Authenticate</span>
+                    </button>
+                    <button type="button" id="cancel-auth" class="btn btn-outline auth-cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v=20250913-3"></script>
+</body>
+</html>
